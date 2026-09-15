@@ -510,6 +510,7 @@ const FUNCTION_URL =
 const MIN_WORD_ACCURACY = 70;
 const MIN_TARGET_SOUND = 35;
 const STRONG_WORD_ACCURACY = 85;
+const MIN_PHRASE_ACCURACY = 65;
 
 
 
@@ -974,7 +975,9 @@ function selectWordCard(card) {
 
 
   speakButton.textContent =
-    "Say the Word";
+    currentCard.dataset.word.trim().includes(" ")
+      ? "Say the Phrase"
+      : "Say the Word";
 
 
   speakButton.className =
@@ -1726,6 +1729,70 @@ function findTargetPhonemes(wordResult, requiredSounds) {
 
 
 function evaluatePronunciation(data) {
+
+  const currentWord =
+    currentCard ? currentCard.dataset.word : "";
+
+
+  // Multi-word vocabulary items (e.g. "turn up"):
+  // evaluate the whole phrase instead of trying to locate one target word/phoneme.
+  if (currentWord && currentWord.trim().includes(" ")) {
+
+    const phraseAccuracy =
+      Number(result && result.accuracyScore);
+
+    const recognizedText =
+      String(
+        (result && result.recognizedText) || ""
+      ).trim();
+
+    const phrasePass =
+      Number.isFinite(phraseAccuracy) &&
+      phraseAccuracy >= MIN_PHRASE_ACCURACY;
+
+    scoreDetails.innerHTML =
+      "<strong>Phrase Accuracy:</strong> " +
+      (Number.isFinite(phraseAccuracy)
+        ? Math.round(phraseAccuracy)
+        : "—") +
+      "<br><strong>Recognized:</strong> " +
+      (recognizedText || "—");
+
+    if (phrasePass) {
+
+      resultBox.textContent =
+        "PASS";
+
+      resultBox.className =
+        "pass";
+
+      messageBox.textContent =
+        "Good job!";
+
+      completeCurrentWord();
+
+    } else {
+
+      currentFailCount++;
+
+      resultBox.textContent =
+        "TRY AGAIN";
+
+      resultBox.className =
+        "fail";
+
+      messageBox.textContent =
+        "Say the whole phrase clearly, or click another word and come back later.";
+
+      checking = false;
+      speakButton.disabled = false;
+      speakButton.textContent = "Say the Phrase";
+
+    }
+
+    return;
+  }
+
 
   const targetWord =
     currentCard
