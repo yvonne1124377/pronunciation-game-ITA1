@@ -1739,11 +1739,11 @@ function evaluatePronunciation(data) {
   if (currentWord && currentWord.trim().includes(" ")) {
 
     const phraseAccuracy =
-      Number(result && result.accuracyScore);
+      Number(data && data.accuracyScore);
 
     const recognizedText =
       String(
-        (result && result.recognizedText) || ""
+        (data && data.recognizedText) || ""
       ).trim();
 
     const phrasePass =
