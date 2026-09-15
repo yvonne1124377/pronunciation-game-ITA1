@@ -414,9 +414,9 @@ const WORD_CONFIG = [
   { word: "mainly",     pos: "adv.",    meaning: "主要地",                   targets: ["eɪ"], rescue: "mainly because" },
   { word: "chance",     pos: "n.",      meaning: "機會",                     targets: ["æ"],  rescue: "a chance" },
   { word: "report",     pos: "n./v.",   meaning: "報告；報導",               targets: ["ɔr"], rescue: "a report" },
-  { word: "sound",      pos: "n./v.",   meaning: "聲音；聽起來",             targets: ["aʊ"], rescue: "that sound" },
+  { word: "humid",      pos: "adj.",    meaning: "潮濕的",                   targets: ["ju"], rescue: "very humid" },
   { word: "favorite",   pos: "adj./n.", meaning: "最喜愛的；最愛的人／事物", targets: ["eɪ"], rescue: "my favorite" },
-  { word: "turn up",    pos: "phr. v.", meaning: "出現；調高",               targets: ["ɝ"],  rescue: "turn up the volume" },
+  { word: "turn up the sound", pos: "phr. v.", meaning: "把聲音調大",         targets: ["ɝ"],  rescue: "please turn up the sound" },
   { word: "field",      pos: "n.",      meaning: "領域；田野",               targets: ["i"],  rescue: "this field" },
   { word: "thought",    pos: "n.",      meaning: "想法；念頭",               targets: ["ɔ"],  rescue: "my thought" },
   { word: "excellent",  pos: "adj.",    meaning: "優秀的；極好的",           targets: ["ɛ"],  rescue: "excellent work" }
@@ -1773,20 +1773,12 @@ function evaluatePronunciation(data) {
 
     } else {
 
-      currentFailCount++;
-
-      resultBox.textContent =
-        "TRY AGAIN";
-
-      resultBox.className =
-        "fail";
-
-      messageBox.textContent =
-        "Say the whole phrase clearly, or click another word and come back later.";
-
       checking = false;
-      speakButton.disabled = false;
-      speakButton.textContent = "Say the Phrase";
+
+      handleTryAgain(
+        "Say the whole phrase clearly, or click another word and come back later.",
+        true
+      );
 
     }
 
@@ -2062,6 +2054,12 @@ function evaluatePronunciation(data) {
    ========================================================= */
 
 function handlePass() {
+
+  /* Always release the recording/checking lock before moving on.
+     This prevents the game from getting stuck after a PASS,
+     especially for multi-word phrases. */
+  recording = false;
+  checking = false;
 
   if (!currentCard) {
     return;
