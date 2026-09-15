@@ -277,6 +277,50 @@
       opacity: 0.82;
     }
 
+  
+    /* ===== Mystery Picture: full-cover 20-card grid ===== */
+    #game {
+      display: grid !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      grid-template-rows: repeat(4, 1fr) !important;
+      gap: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .word-card {
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      box-sizing: border-box !important;
+      background: #ffffff !important;
+      opacity: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+
+    .word-card.active {
+      background: #fff3a6 !important;
+      opacity: 1 !important;
+    }
+
+    .word-card.completed {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    .word-main,
+    .word-info {
+      position: relative;
+      z-index: 2;
+    }
+
   </style>
 </head>
 
