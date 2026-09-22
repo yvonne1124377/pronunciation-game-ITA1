@@ -1,0 +1,2844 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Pronunciation Mystery Picture</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+      color: #222;
+    }
+
+    h1 {
+      margin: 5px 0 8px;
+    }
+
+    .instructions {
+      margin-bottom: 15px;
+      font-size: 17px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    #startButton,
+    #speakButton {
+      padding: 13px 28px;
+      border: none;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px 5px 15px;
+
+      transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+    }
+
+    #startButton {
+      background: #222;
+      color: white;
+    }
+
+    #speakButton {
+      display: none;
+      background: #2563eb;
+      color: white;
+    }
+
+    #speakButton.recording {
+      background: #dc2626;
+    }
+
+    #startButton:hover,
+    #speakButton:hover {
+      transform: scale(1.03);
+    }
+
+    #startButton:disabled,
+    #speakButton:disabled {
+      opacity: 0.5;
+      cursor: default;
+      transform: none;
+    }
+
+    #currentTask {
+      min-height: 42px;
+      margin: 5px 0 8px;
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    #result {
+      min-height: 42px;
+      margin: 5px auto 4px;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .pass {
+      color: #15803d;
+    }
+
+    .fail {
+      color: #dc2626;
+    }
+
+    .checking {
+      color: #555;
+    }
+
+    /* 測試期間顯示 Azure 分數 */
+    #scoreDetails {
+      min-height: 24px;
+      margin: 0 auto 12px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #666;
+    }
+
+    #game {
+      position: relative;
+      display: grid;
+
+      width: min(760px, 96vw);
+      aspect-ratio: 3 / 2;
+
+      margin: 0 auto;
+      background-image: none;
+
+      background-size: cover;
+      background-position: center;
+
+      border-radius: 18px;
+      overflow: hidden;
+
+      box-shadow:
+        0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .word-card {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      padding: 5px;
+
+      background: white;
+      border: 1px solid #777;
+
+      font-size: 18px;
+      font-weight: bold;
+
+      user-select: none;
+      cursor: pointer;
+
+      transition:
+        opacity 0.45s ease,
+        transform 0.25s ease,
+        background 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .word-card.active {
+      background: #ffe45c;
+
+      border: 4px solid #ff9800;
+
+      transform: scale(1.08);
+
+      box-shadow:
+        0 0 18px rgba(255, 152, 0, 0.9);
+
+      z-index: 10;
+    }
+
+    .word-card.completed {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #message {
+      min-height: 30px;
+      margin-top: 14px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #444;
+    }
+
+    #progress {
+      margin-top: 7px;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    #warning {
+      display: none;
+
+      max-width: 700px;
+
+      margin: 10px auto;
+      padding: 12px;
+
+      background: #ffe4e4;
+      color: #a00000;
+
+      border-radius: 10px;
+
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    #finishedMessage {
+      display: none;
+
+      max-width: 760px;
+
+      margin: 18px auto 0;
+      padding: 18px;
+
+      background: #dcfce7;
+      color: #166534;
+
+      border-radius: 16px;
+
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 650px) {
+
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+
+      .instructions {
+        font-size: 15px;
+      }
+
+      .word-card {
+        font-size: 13px;
+        padding: 2px;
+      }
+
+      .word-card.active {
+        transform: scale(1.05);
+      }
+
+      #currentTask {
+        font-size: 19px;
+      }
+
+      #result {
+        font-size: 24px;
+      }
+
+      #startButton,
+      #speakButton {
+        font-size: 16px;
+        padding: 12px 22px;
+      }
+
+    }
+
+  
+    .word-main {
+      font-size: 1.05em;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .word-info {
+      margin-top: 5px;
+      font-size: 0.68em;
+      font-weight: 500;
+      line-height: 1.2;
+      opacity: 0.82;
+    }
+
+  
+    /* ===== Mystery Picture: full-cover 20-card grid ===== */
+    #game {
+      display: grid !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      grid-template-rows: repeat(4, 1fr) !important;
+      gap: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .word-card {
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      box-sizing: border-box !important;
+      background: #ffffff !important;
+      opacity: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+
+    .word-card.active {
+      background: #fff3a6 !important;
+      opacity: 1 !important;
+    }
+
+    .word-card.completed {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    .word-main,
+    .word-info {
+      position: relative;
+      z-index: 2;
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+<h1>
+  🎤 Pronunciation Mystery Picture
+</h1>
+
+
+<div class="instructions">
+  A word will be highlighted first. You may also click any unfinished word you want to practice.<br>
+  Say it correctly to reveal the picture!
+</div>
+
+
+<div id="warning"></div>
+
+
+<button id="startButton">
+  🎤 Start Game
+</button>
+
+
+<div id="currentTask">
+  Click Start Game to begin.
+</div>
+
+
+<button id="speakButton">
+  🎤 Say the Word
+</button>
+
+
+<div id="result"></div>
+
+
+<div id="scoreDetails"></div>
+
+
+<div id="game"></div>
+
+
+<div id="message"></div>
+
+
+<div id="progress"></div>
+
+
+<div id="finishedMessage">
+  🎉 Challenge Completed! Great job!
+</div>
+
+
+
+<script>
+
+/* =========================================================
+   ★ 老師只需要改這一區 ★
+   ========================================================= */
+
+/*
+  每一列包含：
+  word    = 字卡上的單字
+  targets = 要特別檢查的 target sound
+  rescue  = 連續失敗 2 次後可念的短語
+
+  範例：
+  { word: "think", targets: ["θ"], rescue: "think again" }
+
+  如果一個字要檢查多個音：
+  { word: "next", targets: ["k", "s", "t"], rescue: "next time" }
+
+  PASS 標準目前是：
+  Word Accuracy >= 70
+  每個 Target Sound >= 35
+*/
+const WORD_CONFIG = [
+  { word: "matter",                    pos: "n./v.", meaning: "事情；問題；要緊",     targets: ["æ"],  rescue: "What's the matter?" },
+  { word: "pick",                      pos: "v.",    meaning: "挑選；採摘",           targets: ["ɪ"],  rescue: "pick one" },
+  { word: "online",                    pos: "adj./adv.", meaning: "線上的；在線上",   targets: ["aɪ"], rescue: "shop online" },
+  { word: "member",                    pos: "n.",    meaning: "成員；會員",           targets: ["ɛ"],  rescue: "a team member" },
+  { word: "clerk",                     pos: "n.",    meaning: "店員；職員",           targets: ["ɝ"],  rescue: "a store clerk" },
+  { word: "program",                   pos: "n.",    meaning: "節目；計畫；程式",     targets: ["oʊ"], rescue: "a TV program" },
+  { word: "decide",                    pos: "v.",    meaning: "決定",                 targets: ["aɪ"], rescue: "decide to go" },
+  { word: "decision",                  pos: "n.",    meaning: "決定",                 targets: ["ʒ"],  rescue: "make a decision" },
+  { word: "common",                    pos: "adj.",  meaning: "常見的；共同的",       targets: ["ɑ"],  rescue: "a common mistake" },
+  { word: "course",                    pos: "n.",    meaning: "課程；一道菜",         targets: ["ɔr"], rescue: "the main course" },
+  { word: "deal",                      pos: "v./n.", meaning: "處理；交易",           targets: ["i"],  rescue: "deal with it" },
+  { word: "What's the matter with you?", pos: "", meaning: "你怎麼了？",              targets: ["æ"],  rescue: "Tell me what's the matter with you." },
+  { word: "pick up",                   pos: "phr. v.", meaning: "撿起；接人；學會",    targets: ["ɪ"],  rescue: "Please pick it up." },
+  { word: "online shopping",           pos: "n. phr.", meaning: "線上購物",           targets: ["aɪ"], rescue: "I like online shopping." },
+  { word: "TV program",                pos: "n. phr.", meaning: "電視節目",           targets: ["oʊ"], rescue: "my favorite TV program" },
+  { word: "decide to",                 pos: "v. phr.", meaning: "決定要……",           targets: ["aɪ"], rescue: "decide to try" },
+  { word: "make a decision",           pos: "v. phr.", meaning: "做決定",             targets: ["ʒ"],  rescue: "It's time to make a decision." },
+  { word: "a common mistake",          pos: "n. phr.", meaning: "一個常見的錯誤",     targets: ["ɑ"],  rescue: "This is a common mistake." },
+  { word: "main course",               pos: "n. phr.", meaning: "主菜",               targets: ["ɔr"], rescue: "This is the main course." },
+  { word: "deal with",                 pos: "phr. v.", meaning: "處理；應付",          targets: ["i"],  rescue: "I can deal with it." }
+];
+
+
+/*
+  ★ 圖片清單 ★
+
+  你可以放任意數量的圖片網址。
+  每位學生開啟頁面時會隨機抽一張。
+
+  如果你想「指定」某位學生使用某張圖，
+  在網址後面加：
+      ?image=1
+      ?image=2
+      ?image=3
+  依此類推。
+
+  例如：
+  https://你的網站網址/?image=2
+
+  建議：
+  把自己的圖片上傳到 GitHub repo 的 images 資料夾，
+  然後可寫成：
+      "images/picture1.jpg"
+      "images/picture2.jpg"
+*/
+const IMAGE_URLS = [
+
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1400&q=85",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&q=85"
+
+];
+
+
+/* 以下由程式自動產生，不需要另外改 */
+
+const words =
+  WORD_CONFIG.map(
+    item => item.word
+  );
+
+const TARGET_SOUNDS =
+  Object.fromEntries(
+    WORD_CONFIG.map(
+      item => [
+        item.word,
+        item.targets || []
+      ]
+    )
+  );
+
+const RESCUE_PHRASES =
+  Object.fromEntries(
+    WORD_CONFIG.map(
+      item => [
+        item.word,
+        item.rescue || item.word
+      ]
+    )
+  );
+
+const WORD_POS =
+  Object.fromEntries(
+    WORD_CONFIG.map(item => [item.word, item.pos])
+  );
+
+const WORD_MEANINGS =
+  Object.fromEntries(
+    WORD_CONFIG.map(item => [item.word, item.meaning])
+  );
+
+/* =========================================================
+   Azure Function
+   ========================================================= */
+
+const FUNCTION_URL =
+  "https://yvonne-pronunciation-api-c4gvc3hwergxcydd.southeastasia-01.azurewebsites.net/api/pronunciation";
+
+
+
+/* =========================================================
+   PASS 標準
+   ========================================================= */
+
+const MIN_WORD_ACCURACY = 70;
+const MIN_TARGET_SOUND = 35;
+const STRONG_WORD_ACCURACY = 85;
+const MIN_PHRASE_ACCURACY = 65;
+
+
+
+/* 同一個字連續失敗幾次後，啟用 Phrase Rescue */
+const RESCUE_AFTER_FAILS = 2;
+
+
+
+
+/* =========================================================
+   Audio
+   ========================================================= */
+
+const TARGET_SAMPLE_RATE = 16000;
+
+let audioContext = null;
+
+let microphoneStream = null;
+
+let sourceNode = null;
+
+let processorNode = null;
+
+let audioChunks = [];
+
+let inputSampleRate = 44100;
+
+let recording = false;
+
+let checking = false;
+
+
+
+/* =========================================================
+   遊戲
+   ========================================================= */
+
+let remainingCards = [];
+
+let currentCard = null;
+
+let currentFailCount = 0;
+let rescueMode = false;
+
+let gameStarted = false;
+
+let completedCount = 0;
+
+
+
+/* =========================================================
+   HTML
+   ========================================================= */
+
+const startButton =
+  document.getElementById(
+    "startButton"
+  );
+
+
+const speakButton =
+  document.getElementById(
+    "speakButton"
+  );
+
+
+const currentTask =
+  document.getElementById(
+    "currentTask"
+  );
+
+
+const resultBox =
+  document.getElementById(
+    "result"
+  );
+
+
+const scoreDetails =
+  document.getElementById(
+    "scoreDetails"
+  );
+
+
+const messageBox =
+  document.getElementById(
+    "message"
+  );
+
+
+const progressBox =
+  document.getElementById(
+    "progress"
+  );
+
+
+const warningBox =
+  document.getElementById(
+    "warning"
+  );
+
+
+const finishedMessage =
+  document.getElementById(
+    "finishedMessage"
+  );
+
+
+
+/* =========================================================
+   Grid
+   ========================================================= */
+
+function findBestGrid(total) {
+
+  /*
+    讓老師改成任意數量的單字時，
+    版面仍會盡量接近 3:2，不要求字數一定能整除。
+  */
+
+  const columns =
+    Math.max(
+      1,
+      Math.ceil(
+        Math.sqrt(
+          total * 1.5
+        )
+      )
+    );
+
+
+  const rows =
+    Math.max(
+      1,
+      Math.ceil(
+        total / columns
+      )
+    );
+
+
+  return {
+    columns,
+    rows
+  };
+
+}
+
+
+/* =========================================================
+   建立字卡
+   ========================================================= */
+
+function createCards() {
+
+  const game =
+    document.getElementById(
+      "game"
+    );
+
+
+  game.innerHTML = "";
+
+
+  const grid =
+    findBestGrid(
+      words.length
+    );
+
+
+  game.style.gridTemplateColumns =
+    `repeat(${grid.columns}, 1fr)`;
+
+
+  game.style.gridTemplateRows =
+    `repeat(${grid.rows}, 1fr)`;
+
+
+  remainingCards = [];
+
+  completedCount = 0;
+
+
+  words.forEach(
+    function(word) {
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      card.className =
+        "word-card";
+
+
+      card.innerHTML =
+        '<div class="word-main">' + word + '</div>' +
+        '<div class="word-info">' +
+        (WORD_POS[word] || "") + " " +
+        (WORD_MEANINGS[word] || "") +
+        '</div>';
+
+
+      card.dataset.word =
+        word;
+
+
+      card.addEventListener(
+        "click",
+        function() {
+
+          selectWordCard(card);
+
+        }
+      );
+
+
+      game.appendChild(
+        card
+      );
+
+
+      remainingCards.push(
+        card
+      );
+
+    }
+  );
+
+
+  updateProgress();
+
+}
+
+
+
+/* =========================================================
+   圖片選擇
+   ========================================================= */
+
+function chooseGameImage() {
+
+  const game =
+    document.getElementById(
+      "game"
+    );
+
+
+  if (
+    !Array.isArray(IMAGE_URLS) ||
+    IMAGE_URLS.length === 0
+  ) {
+
+    game.style.backgroundImage =
+      "none";
+
+    return;
+
+  }
+
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const requestedImage =
+    Number(
+      params.get("image")
+    );
+
+
+  let imageIndex;
+
+
+  /*
+    ?image=1 代表第一張圖。
+    如果沒有指定，則每次載入頁面隨機選圖。
+  */
+
+  if (
+    Number.isInteger(
+      requestedImage
+    ) &&
+    requestedImage >= 1 &&
+    requestedImage <=
+      IMAGE_URLS.length
+  ) {
+
+    imageIndex =
+      requestedImage - 1;
+
+  }
+
+  else {
+
+    imageIndex =
+      Math.floor(
+        Math.random() *
+        IMAGE_URLS.length
+      );
+
+  }
+
+
+  const selectedImage =
+    IMAGE_URLS[
+      imageIndex
+    ];
+
+
+  game.style.backgroundImage =
+    `url("${selectedImage}")`;
+
+
+  game.dataset.imageNumber =
+    String(
+      imageIndex + 1
+    );
+
+}
+
+
+chooseGameImage();
+
+
+
+/* =========================================================
+   Start
+   ========================================================= */
+
+startButton.addEventListener(
+  "click",
+  async function() {
+
+    hideWarning();
+
+
+    try {
+
+      const permissionStream =
+        await navigator.mediaDevices
+          .getUserMedia({
+            audio: true
+          });
+
+
+      permissionStream
+        .getTracks()
+        .forEach(
+          track =>
+            track.stop()
+        );
+
+    }
+
+    catch(error) {
+
+      showWarning(
+        "🚫 Microphone permission is required. " +
+        "Please allow microphone access and try again."
+      );
+
+      return;
+
+    }
+
+
+    gameStarted =
+      true;
+
+
+    startButton.style.display =
+      "none";
+
+
+    speakButton.style.display =
+      "inline-block";
+
+
+    finishedMessage.style.display =
+      "none";
+
+
+    resultBox.textContent =
+      "";
+
+
+    scoreDetails.textContent =
+      "";
+
+
+    messageBox.textContent =
+      "";
+
+
+    chooseRandomWord();
+
+  }
+);
+
+
+
+/* =========================================================
+   隨機選字
+   ========================================================= */
+
+function selectWordCard(card) {
+
+  if (
+    !gameStarted ||
+    !card ||
+    card.classList.contains("completed") ||
+    recording ||
+    checking
+  ) {
+    return;
+  }
+
+
+  if (currentCard) {
+    currentCard.classList.remove(
+      "active"
+    );
+  }
+
+
+  currentCard = card;
+
+  currentFailCount = 0;
+  rescueMode = false;
+
+
+  currentCard.classList.add(
+    "active"
+  );
+
+
+  currentTask.textContent =
+    "Say the selected word. You can click another word anytime.";
+
+
+  resultBox.textContent =
+    "";
+
+
+  resultBox.className =
+    "";
+
+
+  scoreDetails.textContent =
+    "";
+
+
+  messageBox.textContent =
+    "Press the microphone button when you're ready.";
+
+
+  speakButton.disabled =
+    false;
+
+
+  speakButton.textContent =
+    currentCard.dataset.word.trim().includes(" ")
+      ? "Say the Phrase"
+      : "Say the Word";
+
+
+  speakButton.className =
+    "";
+
+}
+
+
+function chooseRandomWord() {
+
+  if (
+    remainingCards.length === 0
+  ) {
+
+    finishGame();
+
+    return;
+
+  }
+
+
+  const randomIndex =
+    Math.floor(
+      Math.random() *
+      remainingCards.length
+    );
+
+
+  selectWordCard(
+    remainingCards[
+      randomIndex
+    ]
+  );
+
+}
+
+/* =========================================================
+   錄音按鈕
+   ========================================================= */
+
+speakButton.addEventListener(
+  "click",
+  async function() {
+
+    if (
+      !gameStarted ||
+      !currentCard ||
+      checking
+    ) {
+      return;
+    }
+
+
+    if (!recording) {
+
+      await startRecording();
+
+    }
+
+    else {
+
+      await stopRecordingAndCheck();
+
+    }
+
+  }
+);
+
+
+
+/* =========================================================
+   開始錄音
+   ========================================================= */
+
+async function startRecording() {
+
+  hideWarning();
+
+
+  resultBox.textContent =
+    "";
+
+
+  resultBox.className =
+    "";
+
+
+  scoreDetails.textContent =
+    "";
+
+
+  audioChunks = [];
+
+
+  try {
+
+    microphoneStream =
+      await navigator.mediaDevices
+        .getUserMedia({
+
+          audio: {
+
+            echoCancellation:
+              false,
+
+            noiseSuppression:
+              false,
+
+            autoGainControl:
+              false
+
+          }
+
+        });
+
+
+    audioContext =
+      new (
+        window.AudioContext ||
+        window.webkitAudioContext
+      )();
+
+
+    inputSampleRate =
+      audioContext.sampleRate;
+
+
+    sourceNode =
+      audioContext
+        .createMediaStreamSource(
+          microphoneStream
+        );
+
+
+    processorNode =
+      audioContext
+        .createScriptProcessor(
+          4096,
+          1,
+          1
+        );
+
+
+    processorNode.onaudioprocess =
+      function(event) {
+
+        if (!recording) {
+          return;
+        }
+
+
+        const input =
+          event
+            .inputBuffer
+            .getChannelData(0);
+
+
+        audioChunks.push(
+          new Float32Array(
+            input
+          )
+        );
+
+      };
+
+
+    sourceNode.connect(
+      processorNode
+    );
+
+
+    processorNode.connect(
+      audioContext.destination
+    );
+
+
+    recording =
+      true;
+
+
+    speakButton.textContent =
+      "■ Check Pronunciation";
+
+
+    speakButton.className =
+      "recording";
+
+
+    const recordingTarget =
+      rescueMode
+        ? (
+            RESCUE_PHRASES[
+              currentCard.dataset.word
+            ] ||
+            currentCard.dataset.word
+          )
+        : currentCard.dataset.word;
+
+
+    messageBox.textContent =
+      rescueMode
+        ? (
+            '🔴 Recording... Say: "' +
+            recordingTarget +
+            '"'
+          )
+        : "🔴 Recording... Say the highlighted word once.";
+
+  }
+
+  catch(error) {
+
+    showWarning(
+      "Microphone error: " +
+      error.message
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   停止 + 評分
+   ========================================================= */
+
+async function stopRecordingAndCheck() {
+
+  if (!recording) {
+    return;
+  }
+
+
+  recording =
+    false;
+
+
+  checking =
+    true;
+
+
+  speakButton.disabled =
+    true;
+
+
+  speakButton.className =
+    "";
+
+
+  speakButton.textContent =
+    "⏳ Checking...";
+
+
+  messageBox.textContent =
+    "Checking your pronunciation...";
+
+
+  resultBox.textContent =
+    "⏳";
+
+
+  resultBox.className =
+    "checking";
+
+
+  stopAudioDevices();
+
+
+  const combined =
+    mergeBuffers(
+      audioChunks
+    );
+
+
+  if (
+    combined.length === 0
+  ) {
+
+    checking =
+      false;
+
+
+    handleTryAgain(
+      "I couldn't hear the recording.",
+      false
+    );
+
+
+    return;
+
+  }
+
+
+  const downsampled =
+    downsampleBuffer(
+
+      combined,
+
+      inputSampleRate,
+
+      TARGET_SAMPLE_RATE
+
+    );
+
+
+  const wavBuffer =
+    encodeWAV(
+
+      downsampled,
+
+      TARGET_SAMPLE_RATE
+
+    );
+
+
+  const base64Audio =
+    arrayBufferToBase64(
+      wavBuffer
+    );
+
+
+  if (audioContext) {
+
+    try {
+
+      await audioContext.close();
+
+    }
+
+    catch(error) {
+
+      console.log(error);
+
+    }
+
+  }
+
+
+  audioContext =
+    null;
+
+
+  await checkPronunciation(
+    base64Audio
+  );
+
+}
+
+
+
+/* =========================================================
+   關閉錄音
+   ========================================================= */
+
+function stopAudioDevices() {
+
+  if (microphoneStream) {
+
+    microphoneStream
+      .getTracks()
+      .forEach(
+        track =>
+          track.stop()
+      );
+
+  }
+
+
+  if (processorNode) {
+
+    try {
+      processorNode.disconnect();
+    }
+
+    catch(error) {
+      console.log(error);
+    }
+
+  }
+
+
+  if (sourceNode) {
+
+    try {
+      sourceNode.disconnect();
+    }
+
+    catch(error) {
+      console.log(error);
+    }
+
+  }
+
+
+  microphoneStream =
+    null;
+
+
+  processorNode =
+    null;
+
+
+  sourceNode =
+    null;
+
+}
+
+
+
+/* =========================================================
+   Azure
+   ========================================================= */
+
+async function checkPronunciation(
+  audioBase64
+) {
+
+  if (!currentCard) {
+
+    checking =
+      false;
+
+    return;
+
+  }
+
+
+  const targetWord =
+    currentCard.dataset.word;
+
+
+  const referenceText =
+    rescueMode
+      ? (
+          RESCUE_PHRASES[
+            targetWord
+          ] ||
+          targetWord
+        )
+      : targetWord;
+
+
+  try {
+
+    const response =
+      await fetch(
+
+        FUNCTION_URL,
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+
+              referenceText:
+                referenceText,
+
+              audioBase64:
+                audioBase64
+
+            })
+
+        }
+
+      );
+
+
+    const responseText =
+      await response.text();
+
+
+    let data;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          responseText
+        );
+
+    }
+
+    catch(error) {
+
+      throw new Error(
+        "The pronunciation service returned an invalid response."
+      );
+
+    }
+
+
+    if (!response.ok) {
+
+      throw new Error(
+
+        data.error ||
+
+        data.details ||
+
+        "Pronunciation service error."
+
+      );
+
+    }
+
+
+    if (!data.ok) {
+
+      throw new Error(
+
+        data.error ||
+
+        "Pronunciation assessment failed."
+
+      );
+
+    }
+
+
+    evaluatePronunciation(
+      data
+    );
+
+  }
+
+  catch(error) {
+
+    checking =
+      false;
+
+
+    resultBox.textContent =
+      "⚠️";
+
+
+    resultBox.className =
+      "fail";
+
+
+    scoreDetails.textContent =
+      "";
+
+
+    messageBox.textContent =
+      "Connection problem. Please try again.";
+
+
+    speakButton.disabled =
+      false;
+
+
+    speakButton.textContent =
+      rescueMode
+        ? "🎤 Say the Phrase"
+        : "🎤 Try Again";
+
+
+    showWarning(
+      error.message
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   ⭐ 發音判定
+   ========================================================= */
+
+function normalizeText(text) {
+
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z']/g, "");
+
+}
+
+
+function normalizePhoneme(symbol) {
+
+  return String(symbol || "")
+    .trim()
+    .replace(/[ˈˌ.]/g, "");
+
+}
+
+
+function findTargetWordResult(data, targetWord) {
+
+  if (!Array.isArray(data.words)) {
+    return null;
+  }
+
+
+  const target =
+    normalizeText(targetWord);
+
+
+  /*
+    允許學生：
+    1. 單獨念目標字
+    2. 念一個包含目標字的短語
+
+    例如字卡是 same：
+    "same" 或 "same thing" 都可以。
+
+    我們只抓 Azure 回傳中 same 這個 word 的分數，
+    其他單字完全不參與 PASS / FAIL。
+  */
+
+  for (const word of data.words) {
+
+    if (
+      normalizeText(word.word) ===
+      target
+    ) {
+      return word;
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+function findTargetPhonemes(wordResult, requiredSounds) {
+
+  const phonemes =
+    Array.isArray(wordResult?.phonemes)
+      ? wordResult.phonemes
+      : [];
+
+
+  const usedIndexes =
+    new Set();
+
+
+  const matches =
+    [];
+
+
+  for (const requiredSound of requiredSounds) {
+
+    const wanted =
+      normalizePhoneme(requiredSound);
+
+
+    let foundIndex =
+      -1;
+
+
+    for (
+      let i = 0;
+      i < phonemes.length;
+      i++
+    ) {
+
+      if (usedIndexes.has(i)) {
+        continue;
+      }
+
+
+      const actual =
+        normalizePhoneme(
+          phonemes[i].phoneme
+        );
+
+
+      if (actual === wanted) {
+
+        foundIndex = i;
+        break;
+
+      }
+
+    }
+
+
+    if (foundIndex === -1) {
+
+      matches.push({
+
+        symbol:
+          requiredSound,
+
+        score:
+          null,
+
+        found:
+          false
+
+      });
+
+      continue;
+
+    }
+
+
+    usedIndexes.add(
+      foundIndex
+    );
+
+
+    const score =
+      Number(
+        phonemes[
+          foundIndex
+        ].accuracyScore
+      );
+
+
+    matches.push({
+
+      symbol:
+        requiredSound,
+
+      score:
+        Number.isFinite(score)
+          ? score
+          : null,
+
+      found:
+        true
+
+    });
+
+  }
+
+
+  return matches;
+
+}
+
+
+function evaluatePronunciation(data) {
+
+  const currentWord =
+    currentCard ? currentCard.dataset.word : "";
+
+
+  // Multi-word vocabulary items (e.g. "turn up"):
+  // evaluate the whole phrase instead of trying to locate one target word/phoneme.
+  if (currentWord && currentWord.trim().includes(" ")) {
+
+    const phraseAccuracy =
+      Number(data && data.accuracyScore);
+
+    const recognizedText =
+      String(
+        (data && data.recognizedText) || ""
+      ).trim();
+
+    const phrasePass =
+      Number.isFinite(phraseAccuracy) &&
+      phraseAccuracy >= MIN_PHRASE_ACCURACY;
+
+    scoreDetails.innerHTML =
+      "<strong>Phrase Accuracy:</strong> " +
+      (Number.isFinite(phraseAccuracy)
+        ? Math.round(phraseAccuracy)
+        : "—") +
+      "<br><strong>Recognized:</strong> " +
+      (recognizedText || "—");
+
+    if (phrasePass) {
+
+      resultBox.textContent =
+        "PASS";
+
+      resultBox.className =
+        "pass";
+
+      messageBox.textContent =
+        "Good job!";
+
+      handlePass();
+
+    } else {
+
+      checking = false;
+
+      handleTryAgain(
+        "Say the whole phrase clearly, or click another word and come back later.",
+        true
+      );
+
+    }
+
+    return;
+  }
+
+
+  const targetWord =
+    currentCard
+      ? currentCard.dataset.word
+      : "";
+
+
+  const wordResult =
+    findTargetWordResult(
+      data,
+      targetWord
+    );
+
+
+  /*
+    如果 Azure 在回傳的 Words 中找不到目標字，
+    就不能通過。
+
+    這也避免學生只念別的單字就過關。
+  */
+
+  const wordAccuracy =
+    Number(
+      wordResult?.accuracyScore
+    );
+
+
+  const wordPass =
+
+    Boolean(wordResult) &&
+
+    Number.isFinite(
+      wordAccuracy
+    ) &&
+
+    wordAccuracy >=
+      MIN_WORD_ACCURACY;
+
+
+  const requiredSounds =
+    TARGET_SOUNDS[
+      targetWord
+    ] || [];
+
+
+  const targetResults =
+    wordResult
+      ? findTargetPhonemes(
+          wordResult,
+          requiredSounds
+        )
+      : [];
+
+
+  const targetPass =
+
+    requiredSounds.length > 0 &&
+
+    targetResults.length ===
+      requiredSounds.length &&
+
+    targetResults.every(
+      function(item) {
+
+        return (
+          item.found &&
+          Number.isFinite(
+            item.score
+          ) &&
+          item.score >=
+            MIN_TARGET_SOUND
+        );
+
+      }
+    );
+
+
+  /*
+    正式 PASS 標準：
+
+    1. Azure 的 Words 中必須找到目標字
+    2. 該目標字 Word Accuracy >= 70
+    3. 老師指定的每一個 Target Sound >= 35
+
+    其他 phoneme 不影響 PASS / FAIL。
+  */
+
+  const strongWordPass =
+
+    Boolean(wordResult) &&
+
+    Number.isFinite(
+      wordAccuracy
+    ) &&
+
+    wordAccuracy >=
+      STRONG_WORD_ACCURACY;
+
+
+  const finalPass =
+    (wordPass && targetPass) ||
+    strongWordPass;
+
+
+  checking =
+    false;
+
+
+  const recognizedDisplay =
+    data.recognizedText
+      ? data.recognizedText
+      : "-";
+
+
+  const wordAccuracyDisplay =
+    Number.isFinite(
+      wordAccuracy
+    )
+      ? Math.round(
+          wordAccuracy
+        )
+      : "-";
+
+
+  let targetDisplay =
+    "no target data";
+
+
+  if (
+    targetResults.length > 0
+  ) {
+
+    targetDisplay =
+      targetResults
+        .map(
+          function(item) {
+
+            return (
+              "/" +
+              item.symbol +
+              "/ " +
+              (
+                Number.isFinite(
+                  item.score
+                )
+                  ? Math.round(
+                      item.score
+                    )
+                  : "-"
+              )
+            );
+
+          }
+        )
+        .join(" · ");
+
+  }
+
+
+  /*
+    測試階段保留完整 phoneme 資訊，
+    方便老師觀察 Azure 評分。
+  */
+
+  let allPhonemeDisplay =
+    "no data";
+
+
+  if (
+    wordResult &&
+    Array.isArray(
+      wordResult.phonemes
+    ) &&
+    wordResult.phonemes.length > 0
+  ) {
+
+    allPhonemeDisplay =
+      wordResult.phonemes
+        .map(
+          function(phoneme) {
+
+            const score =
+              Number(
+                phoneme.accuracyScore
+              );
+
+
+            return (
+              "/" +
+              (
+                phoneme.phoneme ||
+                "?"
+              ) +
+              "/ " +
+              (
+                Number.isFinite(score)
+                  ? Math.round(score)
+                  : "-"
+              )
+            );
+
+          }
+        )
+        .join(" · ");
+
+  }
+
+
+  scoreDetails.textContent =
+
+    "Recognized: " +
+    recognizedDisplay +
+
+    " | Word: " +
+    targetWord +
+
+    " " +
+    wordAccuracyDisplay +
+
+    " | Target: " +
+    targetDisplay +
+
+    " | All phonemes: " +
+    allPhonemeDisplay;
+
+
+  if (!wordResult) {
+
+    messageBox.textContent =
+      'I could not find "' +
+      targetWord +
+      '" in what you said. Try the word again, or say a short phrase containing it.';
+
+  }
+
+  else if (!wordPass) {
+
+    messageBox.textContent =
+      "Try again, or click another word and come back to this one later.";
+
+  }
+
+  else if (!targetPass) {
+
+    messageBox.textContent =
+      "Try again, use the phrase if offered, or click another word and continue.";
+
+  }
+
+
+  if (finalPass) {
+
+    handlePass();
+
+  }
+
+  else {
+
+    handleTryAgain();
+
+  }
+
+}
+
+/* =========================================================
+   PASS
+   ========================================================= */
+
+function handlePass() {
+
+  /* Always release the recording/checking lock before moving on.
+     This prevents the game from getting stuck after a PASS,
+     especially for multi-word phrases. */
+  recording = false;
+  checking = false;
+
+  if (!currentCard) {
+    return;
+  }
+
+
+  const finishedCard =
+    currentCard;
+
+
+  resultBox.textContent =
+    "PASS ✅";
+
+
+  resultBox.className =
+    "pass";
+
+
+  messageBox.textContent =
+    "Great job!";
+
+
+  speakButton.disabled =
+    true;
+
+
+  speakButton.textContent =
+    "✓ Passed";
+
+
+  finishedCard.classList.remove(
+    "active"
+  );
+
+
+  finishedCard.classList.add(
+    "completed"
+  );
+
+
+  remainingCards =
+    remainingCards.filter(
+
+      function(card) {
+
+        return card !==
+          finishedCard;
+
+      }
+
+    );
+
+
+  completedCount++;
+
+
+  updateProgress();
+
+
+  currentFailCount = 0;
+  rescueMode = false;
+
+
+  currentCard =
+    null;
+
+
+  setTimeout(
+
+    function() {
+
+      chooseRandomWord();
+
+    },
+
+    1400
+
+  );
+
+}
+
+
+
+/* =========================================================
+   TRY AGAIN
+   ========================================================= */
+
+function handleTryAgain(
+  customMessage = "",
+  countFailure = true
+) {
+
+  resultBox.textContent =
+    "TRY AGAIN ❌";
+
+
+  resultBox.className =
+    "fail";
+
+
+  /*
+    只有真正的 pronunciation FAIL 才累計。
+    麥克風沒錄到、連線錯誤等技術問題不計。
+  */
+
+  if (
+    countFailure &&
+    currentCard
+  ) {
+
+    currentFailCount++;
+
+  }
+
+
+  /*
+    同一個字失敗 2 次後，自動進入 Phrase Rescue Mode。
+  */
+
+  if (
+    currentCard &&
+    currentFailCount >=
+      RESCUE_AFTER_FAILS
+  ) {
+
+    rescueMode =
+      true;
+
+  }
+
+
+  if (customMessage) {
+
+    messageBox.textContent =
+      customMessage;
+
+  }
+
+  else if (
+    rescueMode &&
+    currentCard
+  ) {
+
+    const targetWord =
+      currentCard.dataset.word;
+
+
+    const rescuePhrase =
+      RESCUE_PHRASES[
+        targetWord
+      ] ||
+      targetWord;
+
+
+    messageBox.textContent =
+      'Phrase rescue: say "' +
+      rescuePhrase +
+      '". Only "' +
+      targetWord +
+      '" will be scored.';
+
+  }
+
+  else {
+
+    const triesLeft =
+      Math.max(
+        0,
+        RESCUE_AFTER_FAILS -
+        currentFailCount
+      );
+
+
+    messageBox.textContent =
+      triesLeft === 1
+        ? "Try again, or click another word. One more miss will unlock a short phrase."
+        : "Try again, or click another word and come back later.";
+
+  }
+
+
+  /*
+    不換 currentCard。
+    所以原本黃色字繼續亮。
+  */
+
+  speakButton.disabled =
+    false;
+
+
+  speakButton.textContent =
+    rescueMode
+      ? "🎤 Say the Phrase"
+      : "🎤 Try Again";
+
+
+  speakButton.className =
+    "";
+
+}
+
+
+/* =========================================================
+   合併錄音
+   ========================================================= */
+
+function mergeBuffers(chunks) {
+
+  let totalLength =
+    0;
+
+
+  chunks.forEach(
+    function(chunk) {
+
+      totalLength +=
+        chunk.length;
+
+    }
+  );
+
+
+  const result =
+    new Float32Array(
+      totalLength
+    );
+
+
+  let offset =
+    0;
+
+
+  chunks.forEach(
+    function(chunk) {
+
+      result.set(
+        chunk,
+        offset
+      );
+
+
+      offset +=
+        chunk.length;
+
+    }
+  );
+
+
+  return result;
+
+}
+
+
+
+/* =========================================================
+   Downsample
+   ========================================================= */
+
+function downsampleBuffer(
+  buffer,
+  sourceRate,
+  targetRate
+) {
+
+  if (
+    sourceRate ===
+    targetRate
+  ) {
+
+    return buffer;
+
+  }
+
+
+  const ratio =
+    sourceRate /
+    targetRate;
+
+
+  const newLength =
+    Math.round(
+      buffer.length /
+      ratio
+    );
+
+
+  const result =
+    new Float32Array(
+      newLength
+    );
+
+
+  let resultIndex =
+    0;
+
+
+  let bufferIndex =
+    0;
+
+
+  while (
+    resultIndex <
+    result.length
+  ) {
+
+    const nextBufferIndex =
+      Math.round(
+
+        (resultIndex + 1) *
+        ratio
+
+      );
+
+
+    let total =
+      0;
+
+
+    let count =
+      0;
+
+
+    for (
+
+      let i =
+        bufferIndex;
+
+      i <
+        nextBufferIndex &&
+      i <
+        buffer.length;
+
+      i++
+
+    ) {
+
+      total +=
+        buffer[i];
+
+      count++;
+
+    }
+
+
+    result[resultIndex] =
+
+      count > 0
+
+        ? total / count
+
+        : 0;
+
+
+    resultIndex++;
+
+
+    bufferIndex =
+      nextBufferIndex;
+
+  }
+
+
+  return result;
+
+}
+
+
+
+/* =========================================================
+   WAV
+   ========================================================= */
+
+function encodeWAV(
+  samples,
+  sampleRate
+) {
+
+  const buffer =
+    new ArrayBuffer(
+
+      44 +
+      samples.length * 2
+
+    );
+
+
+  const view =
+    new DataView(
+      buffer
+    );
+
+
+  writeString(
+    view,
+    0,
+    "RIFF"
+  );
+
+
+  view.setUint32(
+
+    4,
+
+    36 +
+    samples.length * 2,
+
+    true
+
+  );
+
+
+  writeString(
+    view,
+    8,
+    "WAVE"
+  );
+
+
+  writeString(
+    view,
+    12,
+    "fmt "
+  );
+
+
+  view.setUint32(
+    16,
+    16,
+    true
+  );
+
+
+  view.setUint16(
+    20,
+    1,
+    true
+  );
+
+
+  view.setUint16(
+    22,
+    1,
+    true
+  );
+
+
+  view.setUint32(
+    24,
+    sampleRate,
+    true
+  );
+
+
+  view.setUint32(
+    28,
+    sampleRate * 2,
+    true
+  );
+
+
+  view.setUint16(
+    32,
+    2,
+    true
+  );
+
+
+  view.setUint16(
+    34,
+    16,
+    true
+  );
+
+
+  writeString(
+    view,
+    36,
+    "data"
+  );
+
+
+  view.setUint32(
+
+    40,
+
+    samples.length * 2,
+
+    true
+
+  );
+
+
+  floatTo16BitPCM(
+    view,
+    44,
+    samples
+  );
+
+
+  return buffer;
+
+}
+
+
+
+/* =========================================================
+   PCM
+   ========================================================= */
+
+function floatTo16BitPCM(
+  view,
+  offset,
+  samples
+) {
+
+  for (
+
+    let i = 0;
+
+    i < samples.length;
+
+    i++,
+    offset += 2
+
+  ) {
+
+    const sample =
+      Math.max(
+
+        -1,
+
+        Math.min(
+          1,
+          samples[i]
+        )
+
+      );
+
+
+    view.setInt16(
+
+      offset,
+
+      sample < 0
+
+        ? sample *
+          0x8000
+
+        : sample *
+          0x7fff,
+
+      true
+
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   WAV header
+   ========================================================= */
+
+function writeString(
+  view,
+  offset,
+  string
+) {
+
+  for (
+
+    let i = 0;
+
+    i <
+      string.length;
+
+    i++
+
+  ) {
+
+    view.setUint8(
+
+      offset + i,
+
+      string.charCodeAt(i)
+
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   Base64
+   ========================================================= */
+
+function arrayBufferToBase64(
+  buffer
+) {
+
+  const bytes =
+    new Uint8Array(
+      buffer
+    );
+
+
+  let binary =
+    "";
+
+
+  const chunkSize =
+    0x8000;
+
+
+  for (
+
+    let i = 0;
+
+    i <
+      bytes.length;
+
+    i +=
+      chunkSize
+
+  ) {
+
+    const chunk =
+      bytes.subarray(
+
+        i,
+
+        Math.min(
+
+          i +
+          chunkSize,
+
+          bytes.length
+
+        )
+
+      );
+
+
+    binary +=
+      String
+        .fromCharCode
+        .apply(
+          null,
+          chunk
+        );
+
+  }
+
+
+  return btoa(
+    binary
+  );
+
+}
+
+
+
+/* =========================================================
+   Progress
+   ========================================================= */
+
+function updateProgress() {
+
+  progressBox.textContent =
+
+    "Completed: " +
+
+    completedCount +
+
+    " / " +
+
+    words.length;
+
+}
+
+
+
+/* =========================================================
+   完成
+   ========================================================= */
+
+function finishGame() {
+
+  gameStarted =
+    false;
+
+
+  currentCard =
+    null;
+
+
+  speakButton.style.display =
+    "none";
+
+
+  currentTask.textContent =
+    "🎉 Challenge Completed!";
+
+
+  resultBox.textContent =
+    "🏆";
+
+
+  resultBox.className =
+    "pass";
+
+
+  scoreDetails.textContent =
+    "";
+
+
+  messageBox.textContent =
+    "You revealed the mystery picture!";
+
+
+  progressBox.textContent =
+
+    words.length +
+
+    " / " +
+
+    words.length +
+
+    " words completed";
+
+
+  finishedMessage.style.display =
+    "block";
+
+}
+
+
+
+/* =========================================================
+   Warning
+   ========================================================= */
+
+function showWarning(message) {
+
+  warningBox.style.display =
+    "block";
+
+
+  warningBox.textContent =
+    message;
+
+}
+
+
+function hideWarning() {
+
+  warningBox.style.display =
+    "none";
+
+
+  warningBox.textContent =
+    "";
+
+}
+
+
+
+/* =========================================================
+   建立遊戲
+   ========================================================= */
+
+createCards();
+
+</script>
+
+</body>
+
+</html>
