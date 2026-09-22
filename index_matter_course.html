@@ -507,10 +507,9 @@ const FUNCTION_URL =
    PASS 標準
    ========================================================= */
 
-const MIN_WORD_ACCURACY = 70;
-const MIN_TARGET_SOUND = 35;
-const STRONG_WORD_ACCURACY = 85;
-const MIN_PHRASE_ACCURACY = 65;
+const MIN_WORD_ACCURACY = 75;
+const MIN_TARGET_SOUND = 50;
+const MIN_PHRASE_ACCURACY = 75;
 
 
 
@@ -1570,6 +1569,16 @@ function normalizeText(text) {
 }
 
 
+function normalizeForSpeechMatch(text) {
+
+  return String(text || "")
+    .toLowerCase()
+    .replace(/\bwhat is\b/g, "what's")
+    .replace(/[^a-z]/g, "");
+
+}
+
+
 function normalizePhoneme(symbol) {
 
   return String(symbol || "")
@@ -1733,6 +1742,20 @@ function evaluatePronunciation(data) {
   const currentWord =
     currentCard ? currentCard.dataset.word : "";
 
+  const expectedText =
+    rescueMode
+      ? (RESCUE_PHRASES[currentWord] || currentWord)
+      : currentWord;
+
+  const recognizedText =
+    String(
+      (data && data.recognizedText) || ""
+    ).trim();
+
+  const recognizedMatch =
+    normalizeForSpeechMatch(recognizedText) ===
+    normalizeForSpeechMatch(expectedText);
+
 
   // Multi-word vocabulary items (e.g. "turn up"):
   // evaluate the whole phrase instead of trying to locate one target word/phoneme.
@@ -1741,14 +1764,10 @@ function evaluatePronunciation(data) {
     const phraseAccuracy =
       Number(data && data.accuracyScore);
 
-    const recognizedText =
-      String(
-        (data && data.recognizedText) || ""
-      ).trim();
-
     const phrasePass =
       Number.isFinite(phraseAccuracy) &&
-      phraseAccuracy >= MIN_PHRASE_ACCURACY;
+      phraseAccuracy >= MIN_PHRASE_ACCURACY &&
+      recognizedMatch;
 
     scoreDetails.innerHTML =
       "<strong>Phrase Accuracy:</strong> " +
@@ -1756,7 +1775,9 @@ function evaluatePronunciation(data) {
         ? Math.round(phraseAccuracy)
         : "—") +
       "<br><strong>Recognized:</strong> " +
-      (recognizedText || "—");
+      (recognizedText || "—") +
+      "<br><strong>Words Match:</strong> " +
+      (recognizedMatch ? "Yes" : "No");
 
     if (phrasePass) {
 
@@ -1867,26 +1888,16 @@ function evaluatePronunciation(data) {
 
     1. Azure 的 Words 中必須找到目標字
     2. 該目標字 Word Accuracy >= 70
-    3. 老師指定的每一個 Target Sound >= 35
+    3. 老師指定的每一個 Target Sound >= 50
+    4. 系統辨識出的內容必須和題目一致
 
     其他 phoneme 不影響 PASS / FAIL。
   */
 
-  const strongWordPass =
-
-    Boolean(wordResult) &&
-
-    Number.isFinite(
-      wordAccuracy
-    ) &&
-
-    wordAccuracy >=
-      STRONG_WORD_ACCURACY;
-
-
   const finalPass =
-    (wordPass && targetPass) ||
-    strongWordPass;
+    recognizedMatch &&
+    wordPass &&
+    targetPass;
 
 
   checking =
